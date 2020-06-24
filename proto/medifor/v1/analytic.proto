@@ -94,6 +94,9 @@ message Resource {
 
   // Free-form notes about this resource.
   string notes = 3;
+
+  // The identifier name of the resource. Useful for selecting a resource from a repeated field.
+  string key = 15;
 }
 
 message IntRange {
@@ -239,6 +242,14 @@ message ImageManipulationRequest {
   // The high-provenance device ID, if known, of the device that captured the
   // image.
   string hp_device_id = 4;
+
+  // options K:V to pass to the process for general-purpose parameters
+  map <string, string> options = 14;
+
+  // General-purpose resources for use by the server implementation
+  repeated Resource resources = 15;
+
+
 }
 
 message VideoLocalization {
@@ -322,6 +333,12 @@ message VideoManipulationRequest {
   bool skip_visual = 6;
   bool debug_resources = 7;
   int32 gpu_ord = 8;
+
+    // options K:V to pass to the process for general-purpose parameters
+  map <string, string> options = 14;
+
+  // General-purpose resources for use by the server implementation
+  repeated Resource resources = 15;
 }
 
 // Next ID: 10

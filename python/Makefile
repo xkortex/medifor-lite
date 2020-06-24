@@ -1,11 +1,11 @@
 SHELL := /bin/bash
 
 .PHONY: default
-default: get-deps build
+default: get-deps genproto
 
 .PHONY: get-deps
 get-deps:
-	pip install -r ../../requirements.txt
+	pip install -r ../requirements.txt
 
 .PHONY: genproto
 genproto:
