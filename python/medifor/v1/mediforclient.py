@@ -264,12 +264,13 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         """
         img = self.map(img)
         output_dir = self.o_map(output_dir)
-        req = analytic_pb2.ImageManipulationRequest()
+        req = analytic_pb2.ImageManipulationRequest(options={'foo': 'bar'})
         mime, _ = get_media_type(img)
         req.image.uri = img
         req.image.type = mime
         req.request_id = str(uuid.uuid4())
         req.out_dir = output_dir
+        print(req.SerializeToString())
 
         return self.detect_one(req)
 
