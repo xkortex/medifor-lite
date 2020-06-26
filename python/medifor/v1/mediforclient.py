@@ -17,6 +17,8 @@ from medifor.v1 import analytic_pb2, analytic_pb2_grpc, streamingproxy_pb2, stre
 from medifor.v1.analyticservice import rewrite_uris, get_uris
 from medifor.v1.medifortools import get_detection, get_detection_req, get_media_type
 
+log = logging.getLogger(__name__)
+
 """
 Initialize mimetypes library and add additional mimetypes not currently recognized.
 The mimetype of an image/video is provided to the analytic as additional metadata
@@ -168,7 +170,7 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         ValueError: if either endpoint of src/targ or osrc/otarg is None
             but the other is specified.
     """
-    def __init__(self, host="localhost", port="50051", src='', targ='', osrc='', otarg=''):
+    def __init__(self, host="localhost", port="50051", src='', targ='', osrc='', otarg='', options=None):
         port = str(port)
         self.addr = "{!s}:{!s}".format(host, port)
         self.src = src
@@ -176,6 +178,7 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         self.osrc = osrc
         self.otarg = otarg
         self.stream = StreamingClient(host=host, port=port)
+        self.options = options or {}
 
         if bool(src) != bool(targ):
             raise ValueError('src->targ mapping specified, but one end is None: {}->{}'.format(src, targ))
@@ -264,13 +267,13 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         """
         img = self.map(img)
         output_dir = self.o_map(output_dir)
-        req = analytic_pb2.ImageManipulationRequest(options={'foo': 'bar'})
+        req = analytic_pb2.ImageManipulationRequest(options=self.options)
         mime, _ = get_media_type(img)
         req.image.uri = img
         req.image.type = mime
         req.request_id = str(uuid.uuid4())
         req.out_dir = output_dir
-        print(req.SerializeToString())
+        logging.info(req)
 
         return self.detect_one(req)
 
@@ -287,12 +290,13 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         """
         vid = self.map(vid)
         output_dir = self.o_map(output_dir)
-        req = analytic_pb2.VideoManipulationRequest()
+        req = analytic_pb2.VideoManipulationRequest(options=self.options)
         mime, _ = get_media_type(vid)
         req.video.uri = vid
         req.video.type = mime
         req.request_id = str(uuid.uuid4())
         req.out_dir = output_dir
+        logging.info(req)
 
         return self.detect_one(req)
 

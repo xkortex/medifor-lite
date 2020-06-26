@@ -12,7 +12,9 @@ from medifor.v1 import analytic_pb2, analyticservice
 logging.basicConfig(level=logging.INFO)
 
 def process_image(req, resp):
+    logging.info(req)
     logging.info("got request %s for image %s", req.request_id, req.image.uri)
+    logging.debug(req.SerializeToString())
 
     time.sleep(2)
     resp.score = 0.5
@@ -46,6 +48,7 @@ def process_image(req, resp):
     logging.info("done")
 
 def process_video(req, resp):
+    logging.info(req)
     logging.info("got request %s for video %s", req.request_id, req.video.uri)
 
     time.sleep(2)
