@@ -50,8 +50,15 @@ def friendly_rpc_errors(f):
 @click.option('--targ', '-t', default='', help='Target directory (in container), used for mapping host files to container volume mounts.')
 @click.option('--osrc', '-S', default='', help='Output host-local path for mapping to output volume mounts in container.')
 @click.option('--otarg', '-T', default='', help='Output target directory (in container) for mapping output host files to container files.')
+@click.option('--loglevel', default=20, help='Set the logging level (int)')
 @click.pass_context
-def main(ctx, host, port, src, targ, osrc, otarg):
+def main(ctx, host, port, src, targ, osrc, otarg, loglevel):
+    logging.basicConfig(
+        format='%(levelname)-7s[%(filename)s:%(lineno)d] %(message)s',
+        datefmt='%d-%m-%Y:%H:%M:%S',
+        level=loglevel, stream=sys.stderr)
+    log = logging.getLogger('mediforcli')
+    log.debug('debug on')
     ctx.ensure_object(Context)
     ctx.obj.host = host
     ctx.obj.port = port
@@ -70,9 +77,12 @@ def main(ctx, host, port, src, targ, osrc, otarg):
 
 @main.group()
 @click.pass_context
-def detect(ctx):
+@click.option("--option", "-D", multiple=True, help="Option maps to apply of the form `tag=value` or 'tag'.")
+def detect(ctx, option):
+    options = pipeclient.parse_tags(option)
     ctx.obj.client = mediforclient.MediforClient(host=ctx.obj.host, port=ctx.obj.port,  src=ctx.obj.src, 
-                                                targ=ctx.obj.targ, osrc=ctx.obj.osrc, otarg=ctx.obj.otarg)
+                                                targ=ctx.obj.targ, osrc=ctx.obj.osrc, otarg=ctx.obj.otarg,
+                                                 options=options)
 
 @detect.command()
 @click.pass_context
