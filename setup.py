@@ -23,6 +23,12 @@ setup(name=pkg_name,
       url='https://github.com/mediaforensics/medifor',
       license='Apache License, Version 2.0',
       packages=find_packages(),
+      entry_points={
+          'console_scripts': [
+              'medifor-cli=medifor.v1.cli:main',
+              'medifor-subproc=medifor.v1.subproc_analytic:main',
+          ],
+      },
       install_requires=[
           'setuptools==39.0.1',
           'grpcio==1.15.0',
@@ -55,6 +61,7 @@ setup(name=pkg_name,
           'medifor.v1.pipeline_pb2_grpc',
           'medifor.v1.medifortools',
           'medifor.v1.provclient',
+          'medifor.v1.subproc_analytic',
           'medifor.__main__'
       ]
       )
