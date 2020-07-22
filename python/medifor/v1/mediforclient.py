@@ -300,6 +300,34 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
 
         return self.detect_one(req)
 
+    def multi_img_manip(self, img, output_dir, resource_kv):
+        # type: (str, str, dict) -> analytic_pb2.ImageManipulation
+        """
+        Builds an "ImageManipulationRequest" with extra Resources and calls 'detect_one'
+
+        Args:
+            img: The image uri to be provided to the analytic.
+            output_dir: The output directoy for analytic output files
+            resource_kv: A dict of {key: uri} of files to pass to analytic
+
+        Returns:
+            The response "ImageManipulation" protobuf.
+        """
+        img = self.map(img)
+        output_dir = self.o_map(output_dir)
+        resources = []
+        for key, uri in resource_kv.items():
+            resources.append({"key": key, "uri": uri, "type": get_media_type(uri)[0]})
+        req = analytic_pb2.ImageManipulationRequest(options=self.options, resources=resources)
+        mime, _ = get_media_type(img)
+        req.image.uri = img
+        req.image.type = mime
+        req.request_id = str(uuid.uuid4())
+        req.out_dir = output_dir
+        logging.info(req)
+
+        return self.detect_one(req)
+
 
     def detect_batch(self, dir, out, make_dirs=False):
         """

@@ -100,6 +100,24 @@ def vidmanip(ctx, vid, out):
     client = ctx.obj.client
     print(json_format.MessageToJson(client.vid_manip(vid, out)))
 
+
+@detect.command()
+@click.pass_context
+@click.argument('img')
+@click.option('--out', '-o', required=True, help="Output directory for analytic to use.")
+@click.option("--resource", "-r", multiple=True, help="Pass additional files as Resources in the form `tag=value`")
+def multi_imgmanip(ctx, img, out, resource):
+    """Works like imgmanip but allows zero or more resources to be passed as `-r key=path/to/resource"""
+    client = ctx.obj.client
+    resource_kv = pipeclient.parse_tags(resource)
+    for k,v in resource_kv.items():
+        if not k:
+            raise ValueError("Missing key for {}".format(v))
+        if not v:
+            raise ValueError("Missing val for {}".format(k))
+
+    print(json_format.MessageToJson(client.multi_img_manip(img, out, resource_kv)))
+
 @detect.command()
 @click.pass_context
 @click.option('--dir', '-d', required=True, help="Input directory containing images or videos.")
