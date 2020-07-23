@@ -378,8 +378,9 @@ class AnalyticService:
         except NotImplementedError as e:
             logging.warn('unimplemented endpoint {}'.format(ep_type))
             ctx.abort(grpc.StatusCode.UNIMPLEMENTED, "Endpoint {!r} not implemented: {}".format(ep_type, e))
-        except Exception:
-            logging.exception('unknown error')
+        except Exception as exc:
+            exc_type, exc_val, exc_tb = sys.exc_info()
+            logging.exception('Endpoint raised an error:\n {}: {}'.format(exc_type, exc_val))
             ctx.abort(grpc.StatusCode.UNKNOWN, "Error processing endpoint {!r}: {}".format(ep_type, traceback.format_exc()))
         return resp
 

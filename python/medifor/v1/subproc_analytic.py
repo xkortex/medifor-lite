@@ -39,6 +39,8 @@ def pushdown_json_extractor(s: str) -> str:
         >>> assert d1 == d2
 
     """
+    if not s:
+        return s
     brace_count = 0
     quote_count = 0
     escape_count = 0
@@ -123,10 +125,11 @@ class MediforSubprocServer(object):
         log.info("Running:\n {}".format(" ".join(cmd)))
         p = subp.run(cmd, stdout=subp.PIPE, stderr=subp.PIPE)
         out = p.stdout.decode()
-        err = p.stdout.decode()
+        err = p.stderr.decode()
 
         if p.returncode != 0:
             # transmit the error across the rpc gap, since client will field it
+            print(out)
             raise RuntimeError("Subprocess returned {}. Stderr:\n{}".format(p.returncode, err))
         elif err:
             log.warning("Subprocess stderr:\n{}".format(err))
@@ -134,6 +137,7 @@ class MediforSubprocServer(object):
         extracted_out = pushdown_json_extractor(out)
         msgdict = json.loads(extracted_out)
         json_format.ParseDict(msgdict, resp)
+        log.info(resp)
 
 
 @click.group()
