@@ -68,12 +68,6 @@ def main(ctx, host, port, src, targ, osrc, otarg, loglevel):
     ctx.obj.otarg = otarg
     # ctx.obj.client = mediforclient.MediforClient(host=host, port=port,  src=src, targ=targ, osrc=osrc, otarg=otarg)
 
-# @main.command()
-# @click.pass_context
-# @friendly_rpc_errors
-# def health(ctx):
-#     client = ctx.obj.client
-#     print(json_format.MessageToJson(client.health()))
 
 @main.group()
 @click.pass_context
@@ -83,6 +77,13 @@ def detect(ctx, option):
     ctx.obj.client = mediforclient.MediforClient(host=ctx.obj.host, port=ctx.obj.port,  src=ctx.obj.src, 
                                                 targ=ctx.obj.targ, osrc=ctx.obj.osrc, otarg=ctx.obj.otarg,
                                                  options=options)
+
+@detect.command()
+@click.pass_context
+@friendly_rpc_errors
+def health(ctx):
+    client = ctx.obj.client
+    print(json_format.MessageToJson(client.health()))
 
 @detect.command()
 @click.pass_context
