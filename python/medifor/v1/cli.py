@@ -68,12 +68,6 @@ def main(ctx, host, port, src, targ, osrc, otarg, loglevel):
     ctx.obj.otarg = otarg
     # ctx.obj.client = mediforclient.MediforClient(host=host, port=port,  src=src, targ=targ, osrc=osrc, otarg=otarg)
 
-# @main.command()
-# @click.pass_context
-# @friendly_rpc_errors
-# def health(ctx):
-#     client = ctx.obj.client
-#     print(json_format.MessageToJson(client.health()))
 
 @main.group()
 @click.pass_context
@@ -83,6 +77,13 @@ def detect(ctx, option):
     ctx.obj.client = mediforclient.MediforClient(host=ctx.obj.host, port=ctx.obj.port,  src=ctx.obj.src, 
                                                 targ=ctx.obj.targ, osrc=ctx.obj.osrc, otarg=ctx.obj.otarg,
                                                  options=options)
+
+@detect.command()
+@click.pass_context
+@friendly_rpc_errors
+def health(ctx):
+    client = ctx.obj.client
+    print(json_format.MessageToJson(client.health()))
 
 @detect.command()
 @click.pass_context
@@ -99,6 +100,24 @@ def imgmanip(ctx, img, out):
 def vidmanip(ctx, vid, out):
     client = ctx.obj.client
     print(json_format.MessageToJson(client.vid_manip(vid, out)))
+
+
+@detect.command()
+@click.pass_context
+@click.argument('img')
+@click.option('--out', '-o', required=True, help="Output directory for analytic to use.")
+@click.option("--resource", "-r", multiple=True, help="Pass additional files as Resources in the form `tag=value`")
+def multi_imgmanip(ctx, img, out, resource):
+    """Works like imgmanip but allows zero or more resources to be passed as `-r key=path/to/resource"""
+    client = ctx.obj.client
+    resource_kv = pipeclient.parse_tags(resource)
+    for k,v in resource_kv.items():
+        if not k:
+            raise ValueError("Missing key for {}".format(v))
+        if not v:
+            raise ValueError("Missing val for {}".format(k))
+
+    print(json_format.MessageToJson(client.multi_img_manip(img, out, resource_kv)))
 
 @detect.command()
 @click.pass_context

@@ -23,6 +23,7 @@ def run(img, out, foo, bar, tle, option=None):
             "mask": {"uri": out + "/cli/mask.png", "type": "image/png"},
             "maskOptout": {"uri": out + "/cli/omask.png", "type": "image/png"},
         },
+        "supplement": [{"uri": out + "/cli/supplement.txt", "type": "text/plain"}],
     }
 
     print(json.dumps(d))

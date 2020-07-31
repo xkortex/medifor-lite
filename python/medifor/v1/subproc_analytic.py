@@ -4,6 +4,7 @@ import sys
 import logging
 import subprocess as subp
 import uuid
+import json
 
 import click
 
@@ -18,6 +19,78 @@ log = logging.getLogger(__name__)
 
 class Context:
     pass
+
+
+def pushdown_json_extractor(s: str) -> str:
+    """An extremely primitive 'parser' for extracting JSON-looking data from non-entirely-json
+    strings. Do not trust this to handle more than the most trivial of cases
+
+    :param s: string that should contain one valid json object, possibly surrounded by junk
+
+    :returns: string of isolated JSON data
+
+    Examples:
+        >>> d1 = {"foo": "o'brien", "quotes": '"', "naughty":{"braces": "}", "escapes": r"\"}}
+        >>> s1 =  json.dumps(d1,indent=2, sort_keys=True)
+        >>> s2 = "junk" + s1 + "spam"
+        >>> s3 = pushdown_json_extractor(s2)
+        >>> assert s1 == s3
+        >>> d2 = json.loads(s3)
+        >>> assert d1 == d2
+
+    """
+    if not s:
+        return s
+    brace_count = 0
+    quote_count = 0
+    escape_count = 0
+    brace_starts = []
+    brace_ends = []
+
+    for i, c in enumerate(s):
+        if escape_count:
+            if c == '\\':
+                raise ValueError("Cannot handle nested escapes")
+            escape_count = 0
+            continue
+
+        if c == '\\':
+            escape_count += 1
+            print('escape: {}'.format(escape_count))
+            continue
+
+        if quote_count == 0:
+            if c == '"':
+                quote_count += 1
+                continue
+
+            if c == '{':
+                brace_starts.append(i)
+                brace_count += 1
+
+            elif c == '}':
+                brace_ends.append(i)
+                brace_count -= 1
+        elif quote_count == 1:
+            if c == '"':
+                quote_count -= 1
+                continue
+
+        else:
+            raise ValueError("Quote count unbalanced: {}".format(quote_count))
+
+        if brace_count < 0:
+            raise json.JSONDecodeError("Unexpected closing brace", s, i)
+
+    if brace_count != 0:
+        raise json.JSONDecodeError("Unbalanced brace count: {}".format(brace_count), s, i - 1)
+
+    #     return brace_starts, brace_ends
+    if not brace_starts:
+        raise json.JSONDecodeError("Does not look like JSON", s, 0)
+    start = brace_starts[0]
+    end = brace_ends[-1]
+    return s[start:end + 1]
 
 
 class MediforSubprocServer(object):
@@ -40,6 +113,8 @@ class MediforSubprocServer(object):
         Run a subprocess command.
         We expect this command to emit on stdout ONLY a json-encoded message
         compatible with the ImageManipulation format.
+        The JSON block be pretty-printed and should start and end with braces on their
+        own lines
         """
         log.info(req)
         options = dict(getattr(req, "options", {}))  # allows backwards compat with v1.0 (0.2.3), but without options
@@ -50,14 +125,19 @@ class MediforSubprocServer(object):
         log.info("Running:\n {}".format(" ".join(cmd)))
         p = subp.run(cmd, stdout=subp.PIPE, stderr=subp.PIPE)
         out = p.stdout.decode()
-        err = p.stdout.decode()
+        err = p.stderr.decode()
 
         if p.returncode != 0:
             # transmit the error across the rpc gap, since client will field it
+            print(out)
             raise RuntimeError("Subprocess returned {}. Stderr:\n{}".format(p.returncode, err))
         elif err:
             log.warning("Subprocess stderr:\n{}".format(err))
-        json_format.Parse(out, resp)
+
+        extracted_out = pushdown_json_extractor(out)
+        msgdict = json.loads(extracted_out)
+        json_format.ParseDict(msgdict, resp)
+        log.info(resp)
 
 
 @click.group()

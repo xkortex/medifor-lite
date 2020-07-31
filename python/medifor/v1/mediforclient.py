@@ -274,8 +274,16 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         req.request_id = str(uuid.uuid4())
         req.out_dir = output_dir
         logging.info(req)
+        resp = self.detect_one(req)
+        if resp.localization.mask.uri:
+            resp.localization.mask.uri = self.o_unmap(resp.localization.mask.uri)
+        if resp.localization.mask_optout.uri:
+            resp.localization.mask_optout.uri = self.o_unmap(resp.localization.mask_optout.uri)
 
-        return self.detect_one(req)
+        for msg in resp.supplement:
+            if msg.uri:
+                msg.uri = self.o_unmap(msg.uri)
+        return resp
 
     def vid_manip(self, vid, output_dir):
         """
@@ -298,7 +306,54 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         req.out_dir = output_dir
         logging.info(req)
 
-        return self.detect_one(req)
+        resp = self.detect_one(req)
+        if resp.HasField('localization'):
+            for mir in resp.localization.video_mask:  # type: analytic_pb2.MaskIntRange
+                mir.mask.uri = self.o_unmap(mir.mask.uri)
+            for mir in resp.localization.video_mask_optout:  # type: analytic_pb2.MaskIntRange
+                mir.mask.uri = self.o_unmap(mir.mask.uri)
+
+        for msg in resp.supplement:
+            if msg.uri:
+                msg.uri = self.o_unmap(msg.uri)
+        return resp
+
+    def multi_img_manip(self, img, output_dir, resource_kv):
+        # type: (str, str, dict) -> analytic_pb2.ImageManipulation
+        """
+        Builds an "ImageManipulationRequest" with extra Resources and calls 'detect_one'
+
+        Args:
+            img: The image uri to be provided to the analytic.
+            output_dir: The output directoy for analytic output files
+            resource_kv: A dict of {key: uri} of files to pass to analytic
+
+        Returns:
+            The response "ImageManipulation" protobuf.
+        """
+        img = self.map(img)
+        output_dir = self.o_map(output_dir)
+        resources = []
+        for key, uri in resource_kv.items():
+            resources.append({"key": key, "uri": self.map(uri), "type": get_media_type(uri)[0]})
+        req = analytic_pb2.ImageManipulationRequest(options=self.options, resources=resources)
+        mime, _ = get_media_type(img)
+        req.image.uri = img
+        req.image.type = mime
+        req.request_id = str(uuid.uuid4())
+        req.out_dir = output_dir
+        
+        resp = self.detect_one(req)
+        if resp.localization.mask.uri:
+            resp.localization.mask.uri = self.o_unmap(resp.localization.mask.uri)
+        if resp.localization.mask_optout.uri:
+            resp.localization.mask_optout.uri = self.o_unmap(resp.localization.mask_optout.uri)
+
+        for msg in resp.supplement:
+            if msg.uri:
+                msg.uri = self.o_unmap(msg.uri)
+
+        return resp
 
 
     def detect_batch(self, dir, out, make_dirs=False):
