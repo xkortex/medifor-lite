@@ -335,7 +335,11 @@ class MediforClient(analytic_pb2_grpc.AnalyticStub):
         output_dir = self.o_map(output_dir)
         resources = []
         for key, uri in resource_kv.items():
-            resources.append({"key": key, "uri": self.map(uri), "type": get_media_type(uri)[0]})
+            if os.path.isdir(uri):
+                mimetype = 'inode/directory'
+            else:
+                mimetype = get_media_type(uri)[0]
+            resources.append({"key": key, "uri": self.map(uri), "type": mimetype})
         req = analytic_pb2.ImageManipulationRequest(options=self.options, resources=resources)
         mime, _ = get_media_type(img)
         req.image.uri = img
